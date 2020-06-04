@@ -31,16 +31,13 @@
   -->
 
   <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-dependencies</artifactId>
-    <version>2.1.12.RELEASE</version>
+    <groupId>{{.stack.springpomgroup}}</groupId>
+    <artifactId>{{.stack.springpomid}}</artifactId>
+    <version>{{.stack.springpomversion}}</version>
   </parent>
 
   <properties>
     <!-- Required library versions -->
-    <spring-boot.version>2.1.12.RELEASE</spring-boot.version>
-    <opentracing-spring-jaeger-web-starter.version>2.0.0</opentracing-spring-jaeger-web-starter.version>
-
     <java.version>1.8</java.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -54,6 +51,11 @@
   <dependencyManagement>
     <dependencies>
       <!-- required dependency versions -->
+      <dependency>
+        <groupId>io.opentracing.contrib</groupId>
+        <artifactId>opentracing-spring-jaeger-web-starter</artifactId>
+        <version>3.1.1</version>
+      </dependency>      
     </dependencies>
   </dependencyManagement>
 
@@ -85,7 +87,6 @@
     <dependency>
       <groupId>io.opentracing.contrib</groupId>
       <artifactId>opentracing-spring-jaeger-web-starter</artifactId>
-      <version>${opentracing-spring-jaeger-web-starter.version}</version>
     </dependency>
   </dependencies>
 
@@ -99,7 +100,6 @@
         </plugin>
         <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>${maven-enforcer-plugin.version}</version>
           <executions>
             <execution>
               <id>enforce-banned-dependencies</id>
@@ -124,7 +124,6 @@
         </plugin>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>${maven-clean-plugin.version}</version>
           <configuration>
             <excludeDefaultDirectories>true</excludeDefaultDirectories>
             <filesets>
@@ -144,7 +143,6 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>${spring-boot.version}</version>
         <configuration>
           <systemPropertyVariables>
             <spring.devtools.restart.additional-paths>./target</spring.devtools.restart.additional-paths>

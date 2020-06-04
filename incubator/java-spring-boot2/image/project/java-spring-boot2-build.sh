@@ -43,83 +43,21 @@ exec_run_mvn () {
 }
 
 common() {
-  # Test pom.xml is present and a file.
-  if [ ! -f ./pom.xml ] && [ ! -z "${APPSODY_DEV_MODE}" ]; then
-    error "Could not find Maven pom.xml
-
-    * The project directory (containing an .appsody-conf.yaml file) must contain a pom.xml file.
-    * On Windows and MacOS, the project directory should also be shared with Docker:
-      - Win: https://docs.docker.com/docker-for-windows/#shared-drives
-      - Mac: https://docs.docker.com/docker-for-mac/#file-sharing
-    "
-    exit 1
-  fi
-  # workaround: exit with error if repository does not exist
-  if [ ! -d /mvn/repository ] && [ ! -z "${APPSODY_DEV_MODE}" ]; then
-    error "Could not find local Maven repository
-
-    Create a .m2/repository directory in your home directory. For example:
-    * linux:   mkdir -p ~/.m2/repository
-    * windows: mkdir %SystemDrive%%HOMEPATH%\.m2\repository
-    "
-    exit 1
-  fi
-
-  # Get parent pom information 
-  local a_groupId=$(xmlstarlet sel -T -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:groupId" /project/{{.stack.parentpomfilename}})
-  local a_artifactId=$(xmlstarlet sel -T -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:artifactId" /project/{{.stack.parentpomfilename}})
-  local a_version=$(xmlstarlet sel -T -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:version" /project/{{.stack.parentpomfilename}})
-  local a_major=$(echo ${a_version} | cut -d'.' -f1)
-  local a_minor=$(echo ${a_version} | cut -d'.' -f2)
-  ((next=a_minor+1))
-  local a_range="[${a_major}.${a_minor},${a_major}.${next})"
-
-  if ! $(mvn -N dependency:get -q -o -Dartifact=${a_groupId}:${a_artifactId}:${a_version} -Dpackaging=pom >/dev/null)
-  then
-    # Install parent pom
-    note "Installing parent ${a_groupId}:${a_artifactId}:${a_version} and required dependencies..."
-    if [ -z "${APPSODY_DEV_MODE}" ]
-    then
-      run_mvn install -q -f /project/{{.stack.parentpomfilename}}
-    else
-      run_mvn install -f /project/{{.stack.parentpomfilename}}
-    fi
-  fi
-
-  local p_groupId=$(xmlstarlet sel -T -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:parent/x:groupId" pom.xml)
-  local p_artifactId=$(xmlstarlet sel -T -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:parent/x:artifactId" pom.xml)
-  local p_version_range=$(xmlstarlet sel -T -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:parent/x:version" pom.xml)
-
-  # Require parent in pom.xml
-  if [ "${p_groupId}" != "${a_groupId}" ] || [ "${p_artifactId}" != "${a_artifactId}" ]; then
-    error "Project pom.xml is missing the required parent:
-
-    <parent>
-      <groupId>${a_groupId}</groupId>
-      <artifactId>${a_artifactId}</artifactId>
-      <version>${a_range}</version>
-      <relativePath/>
-    </parent>
-    "
-    exit 1
-  fi
-
-  if ! /project/util/check_version contains "$p_version_range" "$a_version";  then
-    error "Version mismatch
-
-The version of the appsody stack '${a_version}' does not match the
-parent version specified in pom.xml '${p_version_range}'. Please update
-the parent version in pom.xml, and test your changes.
-
-    <parent>
-      <groupId>${a_groupId}</groupId>
-      <artifactId>${a_artifactId}</artifactId>
-      <version>${a_range}</version>
-      <relativePath/>
-    </parent>
-    "
-    exit 1
-  fi
+  # Use project util (https://github.com/IBM/project-util) to 
+  #  - verify presence of pom.xml, maven repo
+  #  - install parent pom if missing
+  #  - verify child has expected parent
+  #  - verify child parent version is compatible with parent
+  # (note: has to be run for a dir that does not have a pom.xml, 
+  #  else maven will attempt to load that pom, and will fail if the parent is invalid, 
+  #  preventing the plugin from being able to say why!)
+  cd /project && \
+  run_mvn com.ibm.cloud:project-util-plugin:check-parent-pom \
+    -Dparent_path=/project/appsody-boot2-pom.xml \
+    -Dchild_path=/project/user-app/pom.xml \
+    -Dmaven.repo.local=/mvn/repository
+  [ $? != 0 ] && error "Project could not be verified" && exit $RC
+  cd /project/user-app
 }
 
 recompile() {
@@ -128,10 +66,6 @@ recompile() {
 }
 
 package() {
-  local group_id=$(xmlstarlet sel -T -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:groupId" pom.xml)
-  local artifact_id=$(xmlstarlet sel -T -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:artifactId" pom.xml)
-  local artifact_version=$(xmlstarlet sel -T -N x="http://maven.apache.org/POM/4.0.0" -t -v "/x:project/x:version" pom.xml)
-  note "Packaging and verifying application ${group_id}:${artifact_id}:${artifact_version}"
   run_mvn clean package
   mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
 }

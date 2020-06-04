@@ -1,6 +1,6 @@
 FROM {{.stack.baseimage}}
 
-# Ensure up to date / patched OS
+# Install required apps
 COPY ./project/update.sh /update.sh
 RUN  /update.sh
 
@@ -15,15 +15,10 @@ COPY --chown=java_user:java_group ./config /config
 COPY ./mvn-stack-settings.xml /usr/share/maven/conf/settings.xml
 COPY ./mvn-stack-settings.xml /project/mvn-stack-settings.xml
 
-# Verify properties used to control versions match between this stack and official spring dependencies.
-RUN /project/verify-property-versions.sh
-
 USER java_user
 
-# Build utility for version range processing
 # Install maven wrapper in /project
-RUN /project/util/check_version build \
- && cd /project \
+RUN cd /project \
  && mvn --no-transfer-progress -B -N io.takari:maven:wrapper -Dmaven=$(mvn help:evaluate -Dexpression=maven.version -q -DforceStdout)
 
 WORKDIR /project/user-app

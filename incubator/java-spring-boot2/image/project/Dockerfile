@@ -7,7 +7,7 @@ FROM {{.stack.baseimage}} as compile
 
 USER root
 
-# Ensure up to date / patched OS
+# Add required apps to image
 COPY ./update.sh /update.sh
 RUN  /update.sh
 
@@ -35,8 +35,7 @@ COPY --chown=java_user:java_group . /project
 
 WORKDIR /project/user-app
 
-RUN /project/util/check_version build \
- && /project/java-spring-boot2-build.sh package \
+RUN /project/java-spring-boot2-build.sh package \
  && /project/java-spring-boot2-build.sh createStartScript
 
 ############################################################################

@@ -2,8 +2,10 @@
 
 # This is the list of packages that are required for stack operation and may not be present
 # in the base image. 
-XTRAPKGS="curl wget xmlstarlet unzip ca-certificates"
+XTRAPKGS="ca-certificates"
 
+# By default we do not upgrade packages in the base image, set
+# this to true if you want this behaviour.
 UPDATE_SYSTEM=false
 
 #

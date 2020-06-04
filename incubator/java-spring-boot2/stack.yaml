@@ -1,5 +1,5 @@
 name: Spring Boot®
-version: 0.3.30
+version: 0.3.31
 description: Spring Boot using OpenJ9 and Maven
 license: Apache-2.0
 language: java
@@ -16,14 +16,34 @@ maintainers:
   - name: Harish Yayi
     email: hyayi@us.ibm.com
     github-id: yharish991
+
 default-template: default
+
 requirements:
    appsody-version: ">= 0.5.0"
    docker-version: ">= 17.09.0"
+
 templating-data:
-  baseimage: maven:3.6-jdk-8-openj9
-  finalimage: adoptopenjdk/openjdk8-openj9:ubi-jre
+
+#Identifier for this stacks parent pom.
+#CHANGE THIS if customising the stack  
   parentpomgroup: dev.appsody
   parentpomid: spring-boot2-stack
+  
+#Range to be used by templates referring to this stack parent pom.
+#Parent pom version will match stack version.
   parentpomrange: '[0.3, 0.4)'
-  parentpomfilename: appsody-boot2-pom.xml
+
+#Base images for stack & production.
+  baseimage: maven:3.6-jdk-8-openj9
+  finalimage: registry.access.redhat.com/ubi8/openjdk-8
+
+#Snowdrop  
+#  springpomgroup: dev.snowdrop
+#  springpomid: snowdrop-dependencies
+#  springpomversion: 2.2.6.Final
+
+#Spring
+  springpomgroup: org.springframework.boot
+  springpomid: spring-boot-dependencies
+  springpomversion: 2.2.6.RELEASE
